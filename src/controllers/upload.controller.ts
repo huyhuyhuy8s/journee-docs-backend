@@ -3,7 +3,7 @@ import { uploadService } from "../services/upload.service";
 import { AuthRequest } from "../types";
 
 class UploadController {
-  async uploadFile(req: Request & AuthRequest, res: Response): Promise<void> {
+  async uploadFile(req: AuthRequest, res: Response): Promise<void> {
     try {
       if (!req.user) {
         res.status(401).json({
@@ -43,10 +43,7 @@ class UploadController {
     }
   }
 
-  async uploadBase64Image(
-    req: Request & AuthRequest,
-    res: Response
-  ): Promise<void> {
+  async uploadBase64Image(req: AuthRequest, res: Response): Promise<void> {
     try {
       if (!req.user) {
         res.status(401).json({
@@ -88,7 +85,7 @@ class UploadController {
     }
   }
 
-  async deleteFile(req: Request & AuthRequest, res: Response): Promise<void> {
+  async deleteFile(req: AuthRequest, res: Response): Promise<void> {
     try {
       if (!req.user) {
         res.status(401).json({

@@ -1,19 +1,14 @@
 import { Router } from "express";
-import { usersController } from "../controllers";
-import { authMiddleware } from "../middleware/auth.middleware";
+import { usersController } from "../controllers/users.controller";
+import { authMiddleware } from "../middlewarer/auth.middleware";
 
 const router = Router();
 
-// GET /api/users/me - Get current user
-router.get("/me", authMiddleware, usersController.getCurrentUser);
+// All user routes require authentication
+router.use(authMiddleware);
 
-// GET /api/users/search - Search users
-router.get("/search", authMiddleware, usersController.searchUsers);
-
-// GET /api/users/:id - Get user by ID
-router.get("/:id", authMiddleware, usersController.getUser);
-
-// GET /api/users/email/:email - Get user by email
-router.get("/email/:email", authMiddleware, usersController.getUserByEmail);
+// User operations
+router.get("/search", usersController.searchUsers);
+router.get("/:id", usersController.getUser);
 
 export default router;

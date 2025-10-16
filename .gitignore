@@ -1,6 +1,7 @@
 # See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
 
 # dependencies
+/dist
 /node_modules
 /.pnp
 .pnp.js
@@ -38,5 +39,3 @@ next-env.d.ts
 
 # Sentry Config File
 .env.sentry-build-plugin
-
-data/

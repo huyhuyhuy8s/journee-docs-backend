@@ -3,7 +3,7 @@ import { clerkService } from "../services/clerk.service";
 import { AuthRequest } from "../types";
 
 class UsersController {
-  async getUser(req: Request & AuthRequest, res: Response): Promise<void> {
+  async getUser(req: AuthRequest, res: Response): Promise<void> {
     try {
       const { id } = req.params;
 
@@ -30,10 +30,7 @@ class UsersController {
     }
   }
 
-  async getUserByEmail(
-    req: Request & AuthRequest,
-    res: Response
-  ): Promise<void> {
+  async getUserByEmail(req: AuthRequest, res: Response): Promise<void> {
     try {
       const { email } = req.params;
 
@@ -68,7 +65,7 @@ class UsersController {
     }
   }
 
-  async searchUsers(req: Request & AuthRequest, res: Response): Promise<void> {
+  async searchUsers(req: AuthRequest, res: Response): Promise<void> {
     try {
       const { q: query, limit = "10" } = req.query;
 
@@ -98,10 +95,7 @@ class UsersController {
     }
   }
 
-  async getCurrentUser(
-    req: Request & AuthRequest,
-    res: Response
-  ): Promise<void> {
+  async getCurrentUser(req: AuthRequest, res: Response): Promise<void> {
     try {
       if (!req.user) {
         res.status(401).json({

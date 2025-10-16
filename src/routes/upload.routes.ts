@@ -1,54 +1,44 @@
 import { Router } from "express";
+import { uploadController } from "../controllers/upload.controller";
+import { authMiddleware } from "../middlewarer/auth.middleware";
 import multer from "multer";
-import { uploadController } from "../controllers";
-import { authMiddleware } from "../middleware/auth.middleware";
 
 const router = Router();
 
 // Configure multer for file uploads
 const upload = multer({
-  dest: "uploads/", // temporary directory
+  storage: multer.memoryStorage(),
   limits: {
     fileSize: 10 * 1024 * 1024, // 10MB limit
   },
   fileFilter: (req, file, cb) => {
-    // Allow images and documents
+    // Allow images, documents, and other common file types
     const allowedTypes = [
-      "image/jpeg",
-      "image/jpg",
-      "image/png",
-      "image/gif",
-      "image/webp",
-      "application/pdf",
-      "application/msword",
-      "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-      "text/plain",
+      'image/jpeg',
+      'image/png',
+      'image/gif',
+      'image/webp',
+      'image/svg+xml',
+      'application/pdf',
+      'text/plain',
+      'application/msword',
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
     ];
 
     if (allowedTypes.includes(file.mimetype)) {
       cb(null, true);
     } else {
-      cb(
-        new Error(
-          "Invalid file type. Only images, PDFs, Word documents, and text files are allowed."
-        )
-      );
+      cb(new Error('Invalid file type'));
     }
   },
 });
 
-// POST /api/upload/file - Upload file
-router.post(
-  "/file",
-  authMiddleware,
-  upload.single("file"),
-  uploadController.uploadFile
-);
+// All upload routes require authentication
+router.use(authMiddleware);
 
-// POST /api/upload/image - Upload base64 image
-router.post("/image", authMiddleware, uploadController.uploadBase64Image);
-
-// DELETE /api/upload/:publicId - Delete file
-router.delete("/:publicId", authMiddleware, uploadController.deleteFile);
+// File upload endpoints
+router.post("/file", upload.single("file"), uploadController.uploadFile);
+router.post("/image/base64", uploadController.uploadBase64Image);
+router.delete("/:publicId", uploadController.deleteFile);
 
 export default router;

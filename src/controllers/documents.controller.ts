@@ -1,56 +1,8 @@
 import { Request, Response } from "express";
 import { documentService } from "../services/document.service";
-import { liveblocksService } from "../services/liveblocks.service";
 import { AuthRequest, ApiResponse } from "../types";
 
 class DocumentsController {
-  async createDocument(req: AuthRequest, res: Response): Promise<void> {
-    try {
-      if (!req.user) {
-        res.status(401).json({
-          success: false,
-          error: "User not authenticated",
-        });
-        return;
-      }
-
-      const { title = "Untitled Document" } = req.body;
-
-      console.log("Creating document for user:", req.user.id);
-
-      // Create document in database (if you have one)
-      const document = await documentService.createDocument({
-        title,
-        createdBy: req.user.id,
-        collaborators: [req.user.id], // Include creator as collaborator
-      });
-
-      // Create Liveblocks room with proper access
-      try {
-        await liveblocksService.createRoom(document.roomId, req.user.id, {
-          title,
-          documentId: document.id,
-        });
-      } catch (roomError) {
-        console.error("Failed to create Liveblocks room:", roomError);
-        // Continue anyway - room might already exist
-      }
-
-      console.log("Document created successfully:", document.id);
-
-      res.status(201).json({
-        success: true,
-        data: document,
-      });
-    } catch (error) {
-      console.error("Create document error:", error);
-      res.status(500).json({
-        success: false,
-        error: "Failed to create document",
-      });
-    }
-  }
-
   async getDocuments(req: AuthRequest, res: Response): Promise<void> {
     try {
       if (!req.user) {
@@ -62,8 +14,8 @@ class DocumentsController {
       }
 
       const {
-        page = 1,
-        limit = 10,
+        page = "1",
+        limit = "10",
         search = "",
         sortBy = "createdAt",
         sortOrder = "desc",
@@ -71,26 +23,27 @@ class DocumentsController {
         dateTo,
       } = req.query;
 
-      const documents = await documentService.getDocuments({
-        userId: req.user.id,
-        page: Number(page),
-        limit: Number(limit),
-        search: String(search),
-        sortBy: String(sortBy),
-        sortOrder: String(sortOrder) as "asc" | "desc",
-        dateFrom: dateFrom ? String(dateFrom) : undefined,
-        dateTo: dateTo ? String(dateTo) : undefined,
-      });
+      const options = {
+        page: parseInt(page as string),
+        limit: parseInt(limit as string),
+        search: search as string,
+        sortBy: sortBy as string,
+        sortOrder: sortOrder as "asc" | "desc",
+        dateFrom: dateFrom as string,
+        dateTo: dateTo as string,
+      };
+
+      const result = await documentService.getDocuments(req.user.id, options);
 
       res.json({
         success: true,
-        data: documents,
+        data: result,
       });
     } catch (error) {
       console.error("Get documents error:", error);
       res.status(500).json({
         success: false,
-        error: "Failed to fetch documents",
+        error: "Failed to get documents",
       });
     }
   }
@@ -106,27 +59,16 @@ class DocumentsController {
       }
 
       const { id } = req.params;
-      console.log("Getting document:", id, "for user:", req.user.id);
 
-      const document = await documentService.getDocument(id, req.user.id);
-
-      if (!document) {
-        res.status(404).json({
+      if (!id) {
+        res.status(400).json({
           success: false,
-          error: "Document not found",
+          error: "Document ID is required",
         });
         return;
       }
 
-      // Ensure user has access to the Liveblocks room
-      try {
-        await liveblocksService.updateRoomAccess(document.roomId, req.user.id, [
-          "room:write",
-        ]);
-      } catch (roomError) {
-        console.error("Failed to update room access:", roomError);
-        // Continue anyway
-      }
+      const document = await documentService.getDocument(id, req.user.id);
 
       res.json({
         success: true,
@@ -134,17 +76,72 @@ class DocumentsController {
       });
     } catch (error) {
       console.error("Get document error:", error);
+
+      if (error instanceof Error) {
+        if (error.message === "Access denied") {
+          res.status(403).json({
+            success: false,
+            error: "Access denied to this document",
+          });
+          return;
+        }
+
+        if (error.message === "Room not found") {
+          res.status(404).json({
+            success: false,
+            error: "Document not found",
+          });
+          return;
+        }
+      }
+
       res.status(500).json({
         success: false,
-        error: "Failed to fetch document",
+        error: "Failed to get document",
       });
     }
   }
 
-  async updateDocument(
-    req: Request & AuthRequest,
-    res: Response
-  ): Promise<void> {
+  async createDocument(req: AuthRequest, res: Response): Promise<void> {
+    try {
+      if (!req.user) {
+        res.status(401).json({
+          success: false,
+          error: "User not authenticated",
+        });
+        return;
+      }
+
+      const { title } = req.body;
+
+      if (!title || typeof title !== "string") {
+        res.status(400).json({
+          success: false,
+          error: "Document title is required",
+        });
+        return;
+      }
+
+      const document = await documentService.createDocument({
+        title: title.trim(),
+        userId: req.user.id,
+      });
+
+      res.status(201).json({
+        success: true,
+        data: document,
+        message: "Document created successfully",
+      });
+    } catch (error) {
+      console.error("Create document error:", error);
+      res.status(500).json({
+        success: false,
+        error: "Failed to create document",
+      });
+    }
+  }
+
+  async updateDocument(req: AuthRequest, res: Response): Promise<void> {
     try {
       if (!req.user) {
         res.status(401).json({
@@ -175,7 +172,7 @@ class DocumentsController {
         updates.collaborators = collaborators;
       }
 
-      const document = await (documentService as any).updateDocument(
+      const document = await documentService.updateDocument(
         id,
         req.user.id,
         updates
@@ -214,10 +211,7 @@ class DocumentsController {
     }
   }
 
-  async deleteDocument(
-    req: Request & AuthRequest,
-    res: Response
-  ): Promise<void> {
+  async deleteDocument(req: AuthRequest, res: Response): Promise<void> {
     try {
       if (!req.user) {
         res.status(401).json({
@@ -237,8 +231,7 @@ class DocumentsController {
         return;
       }
 
-      // use a type assertion to call the deletion method if it's implemented
-      await (documentService as any).deleteDocument(id, req.user.id);
+      await documentService.deleteDocument(id, req.user.id);
 
       res.json({
         success: true,
@@ -268,6 +261,279 @@ class DocumentsController {
       res.status(500).json({
         success: false,
         error: "Failed to delete document",
+      });
+    }
+  }
+
+  async inviteCollaborator(req: AuthRequest, res: Response): Promise<void> {
+    try {
+      if (!req.user) {
+        res.status(401).json({
+          success: false,
+          error: "User not authenticated",
+        });
+        return;
+      }
+
+      const { id } = req.params;
+      const { email, permission = "room:write" } = req.body;
+
+      if (!id) {
+        res.status(400).json({
+          success: false,
+          error: "Document ID is required",
+        });
+        return;
+      }
+
+      if (!email) {
+        res.status(400).json({
+          success: false,
+          error: "Email is required",
+        });
+        return;
+      }
+
+      const result = await documentService.inviteCollaborator(
+        id,
+        req.user.id,
+        email,
+        permission
+      );
+
+      res.json({
+        success: true,
+        data: result,
+        message: "Collaborator invited successfully",
+      });
+    } catch (error) {
+      console.error("Invite collaborator error:", error);
+
+      if (error instanceof Error) {
+        if (error.message === "User not found") {
+          res.status(404).json({
+            success: false,
+            error: "User with this email was not found",
+          });
+          return;
+        }
+
+        if (error.message === "Access denied") {
+          res.status(403).json({
+            success: false,
+            error: "You do not have permission to invite collaborators",
+          });
+          return;
+        }
+      }
+
+      res.status(500).json({
+        success: false,
+        error: "Failed to invite collaborator",
+      });
+    }
+  }
+
+  async removeCollaborator(req: AuthRequest, res: Response): Promise<void> {
+    try {
+      if (!req.user) {
+        res.status(401).json({
+          success: false,
+          error: "User not authenticated",
+        });
+        return;
+      }
+
+      const { id, userId } = req.params;
+
+      if (!id || !userId) {
+        res.status(400).json({
+          success: false,
+          error: "Document ID and User ID are required",
+        });
+        return;
+      }
+
+      await documentService.removeCollaborator(id, req.user.id, userId);
+
+      res.json({
+        success: true,
+        message: "Collaborator removed successfully",
+      });
+    } catch (error) {
+      console.error("Remove collaborator error:", error);
+
+      if (error instanceof Error) {
+        if (error.message === "Access denied") {
+          res.status(403).json({
+            success: false,
+            error: "You do not have permission to remove collaborators",
+          });
+          return;
+        }
+      }
+
+      res.status(500).json({
+        success: false,
+        error: "Failed to remove collaborator",
+      });
+    }
+  }
+
+  async renameDocument(req: AuthRequest, res: Response): Promise<void> {
+    try {
+      if (!req.user) {
+        res.status(401).json({
+          success: false,
+          error: "User not authenticated",
+        });
+        return;
+      }
+
+      const { id } = req.params;
+      const { title } = req.body;
+
+      if (!id) {
+        res.status(400).json({
+          success: false,
+          error: "Document ID is required",
+        });
+        return;
+      }
+
+      if (!title || typeof title !== "string") {
+        res.status(400).json({
+          success: false,
+          error: "Document title is required",
+        });
+        return;
+      }
+
+      const document = await documentService.updateDocument(
+        id,
+        req.user.id,
+        { title: title.trim() }
+      );
+
+      res.json({
+        success: true,
+        data: document,
+        message: "Document renamed successfully",
+      });
+    } catch (error) {
+      console.error("Rename document error:", error);
+
+      if (error instanceof Error) {
+        if (error.message === "Write access denied") {
+          res.status(403).json({
+            success: false,
+            error: "You do not have permission to rename this document",
+          });
+          return;
+        }
+      }
+
+      res.status(500).json({
+        success: false,
+        error: "Failed to rename document",
+      });
+    }
+  }
+
+  async getDocumentAccess(req: AuthRequest, res: Response): Promise<void> {
+    try {
+      if (!req.user) {
+        res.status(401).json({
+          success: false,
+          error: "User not authenticated",
+        });
+        return;
+      }
+
+      const { id } = req.params;
+
+      if (!id) {
+        res.status(400).json({
+          success: false,
+          error: "Document ID is required",
+        });
+        return;
+      }
+
+      const access = await documentService.getDocumentAccess(id, req.user.id);
+
+      res.json({
+        success: true,
+        data: access,
+      });
+    } catch (error) {
+      console.error("Get document access error:", error);
+
+      if (error instanceof Error) {
+        if (error.message === "Access denied") {
+          res.status(403).json({
+            success: false,
+            error: "Access denied to this document",
+          });
+          return;
+        }
+      }
+
+      res.status(500).json({
+        success: false,
+        error: "Failed to get document access",
+      });
+    }
+  }
+
+  async updateDocumentAccess(req: AuthRequest, res: Response): Promise<void> {
+    try {
+      if (!req.user) {
+        res.status(401).json({
+          success: false,
+          error: "User not authenticated",
+        });
+        return;
+      }
+
+      const { id } = req.params;
+      const { usersAccesses } = req.body;
+
+      if (!id) {
+        res.status(400).json({
+          success: false,
+          error: "Document ID is required",
+        });
+        return;
+      }
+
+      const access = await documentService.updateDocumentAccess(
+        id,
+        req.user.id,
+        usersAccesses
+      );
+
+      res.json({
+        success: true,
+        data: access,
+        message: "Document access updated successfully",
+      });
+    } catch (error) {
+      console.error("Update document access error:", error);
+
+      if (error instanceof Error) {
+        if (error.message === "Access denied") {
+          res.status(403).json({
+            success: false,
+            error: "You do not have permission to update document access",
+          });
+          return;
+        }
+      }
+
+      res.status(500).json({
+        success: false,
+        error: "Failed to update document access",
       });
     }
   }

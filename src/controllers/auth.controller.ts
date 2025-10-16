@@ -14,8 +14,6 @@ class AuthController {
         return;
       }
 
-      console.log("Liveblocks auth for user:", req.user.id);
-
       const { status, body } = await liveblocksService.identifyUser(req.user);
 
       res.status(status).json({
@@ -54,7 +52,33 @@ class AuthController {
     }
   }
 
-  async searchUsers(req: AuthRequest, res: Response): Promise<void> {
+  async verifyToken(req: AuthRequest, res: Response): Promise<void> {
+    try {
+      if (!req.user) {
+        res.status(401).json({
+          success: false,
+          error: "User not authenticated",
+        });
+        return;
+      }
+
+      res.json({
+        success: true,
+        data: {
+          valid: true,
+          user: req.user,
+        },
+      });
+    } catch (error) {
+      console.error("Verify token error:", error);
+      res.status(500).json({
+        success: false,
+        error: "Failed to verify token",
+      });
+    }
+  }
+
+  async searchUsers(req: AuthRequest & Request, res: Response): Promise<void> {
     try {
       const { query, limit = 10 } = req.query;
 

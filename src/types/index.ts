@@ -28,3 +28,7 @@ export interface ApiResponse<T = any> {
   error?: string;
   message?: string;
 }
+
+// Export all types from other type files
+export * from "./document.types";
+export * from "./user.types";

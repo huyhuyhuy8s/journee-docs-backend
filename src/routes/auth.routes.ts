@@ -1,16 +1,16 @@
 import { Router } from "express";
-import { authController } from "../controllers";
-import { authMiddleware } from "../middleware/auth.middleware";
+import { authController } from "../controllers/auth.controller";
+import { authMiddleware } from "../middlewarer/auth.middleware";
 
 const router = Router();
 
-// POST /api/auth/liveblocks - Authenticate with Liveblocks
+// Liveblocks authentication endpoint
 router.post("/liveblocks", authMiddleware, authController.liveblocksAuth);
 
-// GET /api/auth/me - Get current user
-router.get("/me", authMiddleware, authController.getCurrentUser);
+// Verify token endpoint
+router.get("/verify", authMiddleware, authController.verifyToken);
 
-// GET /api/auth/users/search - Search users
-router.get("/users/search", authMiddleware, authController.searchUsers);
+// Get current user endpoint
+router.get("/me", authMiddleware, authController.getCurrentUser);
 
 export default router;

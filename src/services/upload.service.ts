@@ -3,9 +3,9 @@ import { config } from "../../config/environment";
 
 // Configure Cloudinary
 cloudinary.config({
-  cloud_name: config.cloudinaryName,
-  api_key: config.cloudinaryApiKey,
-  api_secret: config.cloudinaryApiSecret,
+  cloud_name: config.cloudinary.cloudName,
+  api_key: config.cloudinary.apiKey,
+  api_secret: config.cloudinary.apiSecret,
 });
 
 interface UploadResult {
@@ -22,10 +22,13 @@ class UploadService {
     folder: string = "journee-docs"
   ): Promise<UploadResult> {
     try {
-      const result = await cloudinary.uploader.upload(file.path, {
+      // Convert buffer to base64 for Cloudinary upload
+      const base64Data = `data:${file.mimetype};base64,${file.buffer.toString('base64')}`;
+      
+      const result = await cloudinary.uploader.upload(base64Data, {
         folder,
         resource_type: "auto",
-        public_id: `${Date.now()}_${file.originalname}`,
+        public_id: `${Date.now()}_${file.originalname.replace(/\.[^/.]+$/, "")}`,
       });
 
       return {
