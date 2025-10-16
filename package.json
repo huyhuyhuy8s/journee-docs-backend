@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "nodemon src/app.ts",
     "build": "tsc",
-    "start": "node dist/app.js",
+    "start": "node dist/src/app.js",
     "clean": "rm -rf dist",
     "lint": "eslint src/**/*.ts",
     "test": "jest"

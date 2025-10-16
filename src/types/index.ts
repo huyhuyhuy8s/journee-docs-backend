@@ -8,12 +8,17 @@ export interface User {
   color: string;
 }
 
+export interface Collaborator {
+  id: string;
+  permission: "room:read" | "room:write";
+}
+
 export interface Document {
   id: string;
   title: string;
   roomId: string;
   createdBy: string;
-  collaborators: string[];
+  collaborators: Collaborator[];
   createdAt: Date;
   updatedAt: Date;
 }

@@ -16,7 +16,10 @@ router.delete("/:id", documentsController.deleteDocument);
 
 // Document collaboration operations
 router.post("/:id/invite", documentsController.inviteCollaborator);
-router.delete("/:id/collaborators/:userId", documentsController.removeCollaborator);
+router.delete(
+  "/:id/collaborators/:userId",
+  documentsController.removeCollaborator
+);
 router.patch("/:id/rename", documentsController.renameDocument);
 
 // Document access operations

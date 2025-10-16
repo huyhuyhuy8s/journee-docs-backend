@@ -25,7 +25,9 @@ class ActivityController {
 
       // Check if user has access to the room
       const room = await liveblocksService.getRoom(roomId);
-      const hasAccess = room.usersAccesses?.[req.user.email] || room.metadata.createdBy === req.user.email;
+      const hasAccess =
+        room.usersAccesses?.[req.user.email] ||
+        room.metadata.createdBy === req.user.email;
 
       if (!hasAccess) {
         res.status(403).json({
@@ -115,11 +117,13 @@ class ActivityController {
 
       // Get user's recent rooms activity
       const rooms = await liveblocksService.getRooms(req.user.email);
-      
+
       // Filter and sort by recent activity
       const recentActivity = rooms.data
         .filter((room: any) => {
-          const lastActivity = new Date(room.lastConnectionAt || room.createdAt);
+          const lastActivity = new Date(
+            room.lastConnectionAt || room.createdAt
+          );
           const daysAgo = new Date();
           daysAgo.setDate(daysAgo.getDate() - parseInt(days as string));
           return lastActivity >= daysAgo;
@@ -134,7 +138,10 @@ class ActivityController {
           roomId: room.id,
           title: room.metadata.title || "Untitled Document",
           lastActivity: room.lastConnectionAt || room.createdAt,
-          role: room.metadata.createdBy === req.user?.email ? "creator" : "collaborator",
+          role:
+            room.metadata.createdBy === req.user?.email
+              ? "creator"
+              : "collaborator",
         }));
 
       res.json({

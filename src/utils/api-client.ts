@@ -30,7 +30,7 @@ export class JourneeDocsApiClient {
   private getAuthToken: () => Promise<string | null>;
 
   constructor(baseUrl: string, getAuthToken: () => Promise<string | null>) {
-    this.baseUrl = baseUrl.replace(/\/$/, ''); // Remove trailing slash
+    this.baseUrl = baseUrl.replace(/\/$/, ""); // Remove trailing slash
     this.getAuthToken = getAuthToken;
   }
 
@@ -39,31 +39,31 @@ export class JourneeDocsApiClient {
     options: RequestInit = {}
   ): Promise<ApiResponse<T>> {
     const token = await this.getAuthToken();
-    
+
     const response = await fetch(`${this.baseUrl}${endpoint}`, {
       ...options,
       headers: {
-        'Content-Type': 'application/json',
+        "Content-Type": "application/json",
         ...(token && { Authorization: `Bearer ${token}` }),
         ...options.headers,
       },
     });
 
-    const data = await response.json() as ApiResponse<T>;
+    const data = (await response.json()) as ApiResponse<T>;
     return data;
   }
 
   // Authentication methods
   async verifyToken(): Promise<ApiResponse> {
-    return this.makeRequest('/api/auth/verify');
+    return this.makeRequest("/api/auth/verify");
   }
 
   async getCurrentUser(): Promise<ApiResponse> {
-    return this.makeRequest('/api/auth/me');
+    return this.makeRequest("/api/auth/me");
   }
 
   async authenticateWithLiveblocks(): Promise<ApiResponse> {
-    return this.makeRequest('/api/auth/liveblocks', { method: 'POST' });
+    return this.makeRequest("/api/auth/liveblocks", { method: "POST" });
   }
 
   // Document methods
@@ -84,8 +84,10 @@ export class JourneeDocsApiClient {
         }
       });
     }
-    
-    const endpoint = `/api/documents${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
+
+    const endpoint = `/api/documents${
+      queryParams.toString() ? `?${queryParams.toString()}` : ""
+    }`;
     return this.makeRequest(endpoint);
   }
 
@@ -94,42 +96,52 @@ export class JourneeDocsApiClient {
   }
 
   async createDocument(title: string): Promise<ApiResponse<DocumentData>> {
-    return this.makeRequest('/api/documents', {
-      method: 'POST',
+    return this.makeRequest("/api/documents", {
+      method: "POST",
       body: JSON.stringify({ title }),
     });
   }
 
-  async updateDocument(id: string, updates: { title?: string; collaborators?: string[] }): Promise<ApiResponse<DocumentData>> {
+  async updateDocument(
+    id: string,
+    updates: { title?: string; collaborators?: string[] }
+  ): Promise<ApiResponse<DocumentData>> {
     return this.makeRequest(`/api/documents/${id}`, {
-      method: 'PUT',
+      method: "PUT",
       body: JSON.stringify(updates),
     });
   }
 
   async deleteDocument(id: string): Promise<ApiResponse> {
     return this.makeRequest(`/api/documents/${id}`, {
-      method: 'DELETE',
+      method: "DELETE",
     });
   }
 
-  async renameDocument(id: string, title: string): Promise<ApiResponse<DocumentData>> {
+  async renameDocument(
+    id: string,
+    title: string
+  ): Promise<ApiResponse<DocumentData>> {
     return this.makeRequest(`/api/documents/${id}/rename`, {
-      method: 'PATCH',
+      method: "PATCH",
       body: JSON.stringify({ title }),
     });
   }
 
-  async inviteCollaborator(id: string, email: string, permission: 'room:read' | 'room:write' = 'room:write'): Promise<ApiResponse> {
+  async inviteCollaborator(
+    id: string,
+    email: string,
+    permission: "room:read" | "room:write" = "room:write"
+  ): Promise<ApiResponse> {
     return this.makeRequest(`/api/documents/${id}/invite`, {
-      method: 'POST',
+      method: "POST",
       body: JSON.stringify({ email, permission }),
     });
   }
 
   async removeCollaborator(id: string, userId: string): Promise<ApiResponse> {
     return this.makeRequest(`/api/documents/${id}/collaborators/${userId}`, {
-      method: 'DELETE',
+      method: "DELETE",
     });
   }
 
@@ -137,9 +149,12 @@ export class JourneeDocsApiClient {
     return this.makeRequest(`/api/documents/${id}/access`);
   }
 
-  async updateDocumentAccess(id: string, usersAccesses: Record<string, string[]>): Promise<ApiResponse> {
+  async updateDocumentAccess(
+    id: string,
+    usersAccesses: Record<string, string[]>
+  ): Promise<ApiResponse> {
     return this.makeRequest(`/api/documents/${id}/access`, {
-      method: 'PATCH',
+      method: "PATCH",
       body: JSON.stringify({ usersAccesses }),
     });
   }
@@ -147,8 +162,8 @@ export class JourneeDocsApiClient {
   // User methods
   async searchUsers(query: string, limit?: number): Promise<ApiResponse> {
     const params = new URLSearchParams({ q: query });
-    if (limit) params.append('limit', limit.toString());
-    
+    if (limit) params.append("limit", limit.toString());
+
     return this.makeRequest(`/api/users/search?${params.toString()}`);
   }
 
@@ -159,12 +174,12 @@ export class JourneeDocsApiClient {
   // Upload methods
   async uploadFile(file: File): Promise<ApiResponse> {
     const formData = new FormData();
-    formData.append('file', file);
+    formData.append("file", file);
 
     const token = await this.getAuthToken();
-    
+
     const response = await fetch(`${this.baseUrl}/api/upload/file`, {
-      method: 'POST',
+      method: "POST",
       headers: {
         ...(token && { Authorization: `Bearer ${token}` }),
       },
@@ -175,43 +190,45 @@ export class JourneeDocsApiClient {
   }
 
   async uploadBase64Image(base64Data: string): Promise<ApiResponse> {
-    return this.makeRequest('/api/upload/image/base64', {
-      method: 'POST',
+    return this.makeRequest("/api/upload/image/base64", {
+      method: "POST",
       body: JSON.stringify({ base64Data }),
     });
   }
 
   async deleteFile(publicId: string): Promise<ApiResponse> {
     return this.makeRequest(`/api/upload/${publicId}`, {
-      method: 'DELETE',
+      method: "DELETE",
     });
   }
 
   // Notification methods
   async getNotifications(page?: number, limit?: number): Promise<ApiResponse> {
     const params = new URLSearchParams();
-    if (page) params.append('page', page.toString());
-    if (limit) params.append('limit', limit.toString());
-    
-    const endpoint = `/api/notifications${params.toString() ? `?${params.toString()}` : ''}`;
+    if (page) params.append("page", page.toString());
+    if (limit) params.append("limit", limit.toString());
+
+    const endpoint = `/api/notifications${
+      params.toString() ? `?${params.toString()}` : ""
+    }`;
     return this.makeRequest(endpoint);
   }
 
   async markNotificationAsRead(id: string): Promise<ApiResponse> {
     return this.makeRequest(`/api/notifications/mark-read/${id}`, {
-      method: 'POST',
+      method: "POST",
     });
   }
 
   async markAllNotificationsAsRead(): Promise<ApiResponse> {
-    return this.makeRequest('/api/notifications/mark-all-read', {
-      method: 'POST',
+    return this.makeRequest("/api/notifications/mark-all-read", {
+      method: "POST",
     });
   }
 
   async deleteNotification(id: string): Promise<ApiResponse> {
     return this.makeRequest(`/api/notifications/${id}`, {
-      method: 'DELETE',
+      method: "DELETE",
     });
   }
 
@@ -222,17 +239,19 @@ export class JourneeDocsApiClient {
 
   async updatePresence(roomId: string, presence: any): Promise<ApiResponse> {
     return this.makeRequest(`/api/activity/documents/${roomId}/presence`, {
-      method: 'POST',
+      method: "POST",
       body: JSON.stringify(presence),
     });
   }
 
   async getUserActivity(limit?: number, days?: number): Promise<ApiResponse> {
     const params = new URLSearchParams();
-    if (limit) params.append('limit', limit.toString());
-    if (days) params.append('days', days.toString());
-    
-    const endpoint = `/api/activity/user/activity${params.toString() ? `?${params.toString()}` : ''}`;
+    if (limit) params.append("limit", limit.toString());
+    if (days) params.append("days", days.toString());
+
+    const endpoint = `/api/activity/user/activity${
+      params.toString() ? `?${params.toString()}` : ""
+    }`;
     return this.makeRequest(endpoint);
   }
 }
@@ -243,12 +262,12 @@ import { useAuth } from '@clerk/nextjs';
 
 export const useJourneeDocsApi = () => {
   const { getToken } = useAuth();
-  
+
   const apiClient = new JourneeDocsApiClient(
     process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001',
     getToken
   );
-  
+
   return apiClient;
 };
 */

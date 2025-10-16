@@ -16,11 +16,13 @@ class AdminController {
 
       // Get all rooms for stats
       const rooms = await liveblocksService.getRooms();
-      
+
       const stats = {
         totalDocuments: rooms.data.length,
         totalActiveUsers: new Set(
-          rooms.data.flatMap((room: any) => Object.keys(room.usersAccesses || {}))
+          rooms.data.flatMap((room: any) =>
+            Object.keys(room.usersAccesses || {})
+          )
         ).size,
         documentsCreatedThisWeek: rooms.data.filter((room: any) => {
           const createdAt = new Date(room.createdAt);
@@ -34,10 +36,14 @@ class AdminController {
           monthAgo.setMonth(monthAgo.getMonth() - 1);
           return createdAt >= monthAgo;
         }).length,
-        averageCollaboratorsPerDocument: rooms.data.length > 0 
-          ? rooms.data.reduce((sum: number, room: any) => 
-              sum + Object.keys(room.usersAccesses || {}).length, 0) / rooms.data.length
-          : 0,
+        averageCollaboratorsPerDocument:
+          rooms.data.length > 0
+            ? rooms.data.reduce(
+                (sum: number, room: any) =>
+                  sum + Object.keys(room.usersAccesses || {}).length,
+                0
+              ) / rooms.data.length
+            : 0,
       };
 
       res.json({
@@ -102,19 +108,25 @@ class AdminController {
 
       // Get all rooms
       const rooms = await liveblocksService.getRooms();
-      
+
       let filteredRooms = rooms.data;
 
       // Apply search filter
       if (search) {
         filteredRooms = filteredRooms.filter((room: any) =>
-          room.metadata.title?.toLowerCase().includes((search as string).toLowerCase())
+          room.metadata.title
+            ?.toLowerCase()
+            .includes((search as string).toLowerCase())
         );
       }
 
       // Apply pagination
-      const startIndex = (parseInt(page as string) - 1) * parseInt(limit as string);
-      const paginatedRooms = filteredRooms.slice(startIndex, startIndex + parseInt(limit as string));
+      const startIndex =
+        (parseInt(page as string) - 1) * parseInt(limit as string);
+      const paginatedRooms = filteredRooms.slice(
+        startIndex,
+        startIndex + parseInt(limit as string)
+      );
 
       const documents = paginatedRooms.map((room: any) => ({
         id: room.id,
@@ -131,7 +143,9 @@ class AdminController {
           documents,
           currentPage: parseInt(page as string),
           totalCount: filteredRooms.length,
-          totalPages: Math.ceil(filteredRooms.length / parseInt(limit as string)),
+          totalPages: Math.ceil(
+            filteredRooms.length / parseInt(limit as string)
+          ),
         },
       });
     } catch (error) {

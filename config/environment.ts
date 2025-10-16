@@ -18,11 +18,11 @@ export const config = {
   liveblocksSecretKey: process.env.LIVEBLOCKS_SECRET_KEY!,
   liveblocksWebhookSecret: process.env.LIVEBLOCKS_WEBHOOK_SECRET,
 
-  // Cloudinary
+  // Cloudinary (optional)
   cloudinary: {
-    cloudName: process.env.CLOUDINARY_CLOUD_NAME!,
-    apiKey: process.env.CLOUDINARY_API_KEY!,
-    apiSecret: process.env.CLOUDINARY_API_SECRET!,
+    cloudName: process.env.CLOUDINARY_CLOUD_NAME || "",
+    apiKey: process.env.CLOUDINARY_API_KEY || "",
+    apiSecret: process.env.CLOUDINARY_API_SECRET || "",
   },
 
   // CORS

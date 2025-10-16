@@ -10,7 +10,14 @@ export const authMiddleware = async (
   try {
     const authHeader = req.headers.authorization;
 
+    console.log(
+      "Auth middleware - Headers:",
+      JSON.stringify(req.headers, null, 2)
+    );
+    console.log("Auth middleware - Authorization header:", authHeader);
+
     if (!authHeader || !authHeader.startsWith("Bearer ")) {
+      console.log("Auth middleware - No valid authorization header");
       res.status(401).json({
         success: false,
         error: "No token provided",
@@ -19,9 +26,16 @@ export const authMiddleware = async (
     }
 
     const token = authHeader.substring(7); // Remove 'Bearer ' prefix
+    console.log(
+      "Auth middleware - Token:",
+      token ? `Present (${token.length} chars)` : "Missing"
+    );
 
     // Verify token with Clerk
+    console.log("Auth middleware - Verifying token with Clerk...");
     const sessionToken = await clerkClient.verifyToken(token);
+    console.log("Auth middleware - Token verified, userId:", sessionToken.sub);
+
     const userId = sessionToken.sub;
 
     // Get user details from Clerk
@@ -36,9 +50,14 @@ export const authMiddleware = async (
     };
 
     req.user = user;
+    console.log("Auth middleware - Success, user:", user);
     next();
   } catch (error) {
     console.error("Auth middleware error:", error);
+    console.error(
+      "Error details:",
+      error instanceof Error ? error.message : "Unknown error"
+    );
     res.status(401).json({
       success: false,
       error: "Invalid or expired token",

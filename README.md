@@ -79,75 +79,75 @@ npm start
 
 ### Authentication
 
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| POST | `/api/auth/liveblocks` | Authenticate with Liveblocks |
-| GET | `/api/auth/verify` | Verify authentication token |
-| GET | `/api/auth/me` | Get current user information |
+| Method | Endpoint               | Description                  |
+| ------ | ---------------------- | ---------------------------- |
+| POST   | `/api/auth/liveblocks` | Authenticate with Liveblocks |
+| GET    | `/api/auth/verify`     | Verify authentication token  |
+| GET    | `/api/auth/me`         | Get current user information |
 
 ### Documents
 
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| GET | `/api/documents` | Get user's documents (with pagination, search, filtering) |
-| POST | `/api/documents` | Create a new document |
-| GET | `/api/documents/:id` | Get a specific document |
-| PUT | `/api/documents/:id` | Update a document |
-| DELETE | `/api/documents/:id` | Delete a document |
-| POST | `/api/documents/:id/invite` | Invite a collaborator to document |
-| DELETE | `/api/documents/:id/collaborators/:userId` | Remove a collaborator |
-| PATCH | `/api/documents/:id/rename` | Rename a document |
-| GET | `/api/documents/:id/access` | Get document access information |
-| PATCH | `/api/documents/:id/access` | Update document access permissions |
+| Method | Endpoint                                   | Description                                               |
+| ------ | ------------------------------------------ | --------------------------------------------------------- |
+| GET    | `/api/documents`                           | Get user's documents (with pagination, search, filtering) |
+| POST   | `/api/documents`                           | Create a new document                                     |
+| GET    | `/api/documents/:id`                       | Get a specific document                                   |
+| PUT    | `/api/documents/:id`                       | Update a document                                         |
+| DELETE | `/api/documents/:id`                       | Delete a document                                         |
+| POST   | `/api/documents/:id/invite`                | Invite a collaborator to document                         |
+| DELETE | `/api/documents/:id/collaborators/:userId` | Remove a collaborator                                     |
+| PATCH  | `/api/documents/:id/rename`                | Rename a document                                         |
+| GET    | `/api/documents/:id/access`                | Get document access information                           |
+| PATCH  | `/api/documents/:id/access`                | Update document access permissions                        |
 
 ### Users
 
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| GET | `/api/users/search` | Search for users by query |
-| GET | `/api/users/:id` | Get user by ID |
+| Method | Endpoint            | Description               |
+| ------ | ------------------- | ------------------------- |
+| GET    | `/api/users/search` | Search for users by query |
+| GET    | `/api/users/:id`    | Get user by ID            |
 
 ### File Upload
 
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| POST | `/api/upload/file` | Upload a file (images, documents) |
-| POST | `/api/upload/image/base64` | Upload a base64 encoded image |
-| DELETE | `/api/upload/:publicId` | Delete an uploaded file |
+| Method | Endpoint                   | Description                       |
+| ------ | -------------------------- | --------------------------------- |
+| POST   | `/api/upload/file`         | Upload a file (images, documents) |
+| POST   | `/api/upload/image/base64` | Upload a base64 encoded image     |
+| DELETE | `/api/upload/:publicId`    | Delete an uploaded file           |
 
 ### Notifications
 
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| GET | `/api/notifications` | Get user's notifications |
-| POST | `/api/notifications/mark-read/:id` | Mark a notification as read |
-| POST | `/api/notifications/mark-all-read` | Mark all notifications as read |
-| DELETE | `/api/notifications/:id` | Delete a notification |
+| Method | Endpoint                           | Description                    |
+| ------ | ---------------------------------- | ------------------------------ |
+| GET    | `/api/notifications`               | Get user's notifications       |
+| POST   | `/api/notifications/mark-read/:id` | Mark a notification as read    |
+| POST   | `/api/notifications/mark-all-read` | Mark all notifications as read |
+| DELETE | `/api/notifications/:id`           | Delete a notification          |
 
 ### Activity Tracking
 
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| GET | `/api/activity/documents/:roomId` | Get document activity and presence data |
-| POST | `/api/activity/documents/:roomId/presence` | Update user presence in document |
-| GET | `/api/activity/user/activity` | Get user's recent activity |
+| Method | Endpoint                                   | Description                             |
+| ------ | ------------------------------------------ | --------------------------------------- |
+| GET    | `/api/activity/documents/:roomId`          | Get document activity and presence data |
+| POST   | `/api/activity/documents/:roomId/presence` | Update user presence in document        |
+| GET    | `/api/activity/user/activity`              | Get user's recent activity              |
 
 ### Admin (Future Enhancement)
 
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| GET | `/api/admin/stats` | Get system statistics |
-| GET | `/api/admin/users` | Get all users (admin only) |
-| GET | `/api/admin/documents` | Get all documents (admin only) |
-| DELETE | `/api/admin/documents/:roomId` | Force delete a document (admin only) |
-| PATCH | `/api/admin/users/:userId/status` | Update user status (admin only) |
+| Method | Endpoint                          | Description                          |
+| ------ | --------------------------------- | ------------------------------------ |
+| GET    | `/api/admin/stats`                | Get system statistics                |
+| GET    | `/api/admin/users`                | Get all users (admin only)           |
+| GET    | `/api/admin/documents`            | Get all documents (admin only)       |
+| DELETE | `/api/admin/documents/:roomId`    | Force delete a document (admin only) |
+| PATCH  | `/api/admin/users/:userId/status` | Update user status (admin only)      |
 
 ### Webhooks
 
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| POST | `/api/webhooks/liveblocks` | Handle Liveblocks webhook events |
-| POST | `/api/webhooks/clerk` | Handle Clerk webhook events |
+| Method | Endpoint                   | Description                      |
+| ------ | -------------------------- | -------------------------------- |
+| POST   | `/api/webhooks/liveblocks` | Handle Liveblocks webhook events |
+| POST   | `/api/webhooks/clerk`      | Handle Clerk webhook events      |
 
 ## Query Parameters
 

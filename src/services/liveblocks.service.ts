@@ -1,6 +1,7 @@
 import { Liveblocks } from "@liveblocks/node";
 import { config } from "../../config/environment";
 import { User } from "../types";
+import { clerkService } from "./clerk.service";
 
 class LiveblocksService {
   private liveblocks: Liveblocks;
@@ -13,9 +14,10 @@ class LiveblocksService {
 
   async identifyUser(user: User, groupIds: string[] = []) {
     try {
+      // Use Clerk ID for consistency with existing room permissions
       const { status, body } = await this.liveblocks.identifyUser(
         {
-          userId: user.email,
+          userId: user.id, // Use Clerk ID instead of email
           groupIds,
         },
         {
@@ -38,13 +40,14 @@ class LiveblocksService {
 
   async createRoom(roomId: string, userId: string, metadata: any = {}) {
     try {
+      // Keep using Clerk ID for consistency with existing system
       const room = await this.liveblocks.createRoom(roomId, {
         defaultAccesses: [],
         usersAccesses: {
-          [userId]: ["room:write"],
+          [userId]: ["room:write"], // Use Clerk ID for consistency
         },
         metadata: {
-          createdBy: userId,
+          createdBy: userId, // Use Clerk ID
           ...metadata,
         },
       });
@@ -122,7 +125,10 @@ class LiveblocksService {
     }
   }
 
-  async getInboxNotifications(userId: string, options: { page: number; limit: number }): Promise<any> {
+  async getInboxNotifications(
+    userId: string,
+    options: { page: number; limit: number }
+  ): Promise<any> {
     try {
       // Since @liveblocks/node might not have all notification methods,
       // we'll implement a basic version or use available methods
@@ -142,11 +148,16 @@ class LiveblocksService {
     }
   }
 
-  async markInboxNotificationAsRead(userId: string, inboxNotificationId: string): Promise<boolean> {
+  async markInboxNotificationAsRead(
+    userId: string,
+    inboxNotificationId: string
+  ): Promise<boolean> {
     try {
       // For now, return true as placeholder
       // In a real implementation, you would use the correct Liveblocks method
-      console.log(`Marking notification ${inboxNotificationId} as read for user ${userId}`);
+      console.log(
+        `Marking notification ${inboxNotificationId} as read for user ${userId}`
+      );
       return true;
     } catch (error) {
       console.error("Liveblocks mark notification as read error:", error);
@@ -164,9 +175,14 @@ class LiveblocksService {
     }
   }
 
-  async deleteInboxNotification(userId: string, inboxNotificationId: string): Promise<boolean> {
+  async deleteInboxNotification(
+    userId: string,
+    inboxNotificationId: string
+  ): Promise<boolean> {
     try {
-      console.log(`Deleting notification ${inboxNotificationId} for user ${userId}`);
+      console.log(
+        `Deleting notification ${inboxNotificationId} for user ${userId}`
+      );
       return true;
     } catch (error) {
       console.error("Liveblocks delete notification error:", error);
@@ -192,13 +208,32 @@ class LiveblocksService {
 
   async getRooms(userId?: string) {
     try {
-      const rooms = await this.liveblocks.getRooms({
+      console.log("Liveblocks service - getRooms called with userId:", userId);
+
+      const requestParams = {
         userId,
         limit: 100,
-      });
+      };
+      console.log("Liveblocks service - Request params:", requestParams);
+
+      const rooms = await this.liveblocks.getRooms(requestParams);
+      console.log("Liveblocks service - Rooms fetched successfully");
+      console.log(
+        "Liveblocks service - Number of rooms:",
+        rooms?.data?.length || 0
+      );
+      console.log(
+        "Liveblocks service - Rooms data:",
+        JSON.stringify(rooms, null, 2)
+      );
+
       return rooms;
     } catch (error) {
       console.error("Liveblocks get rooms error:", error);
+      console.error(
+        "Liveblocks get rooms error details:",
+        JSON.stringify(error, null, 2)
+      );
       throw new Error("Failed to get rooms");
     }
   }

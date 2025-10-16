@@ -5,7 +5,16 @@ import { AuthRequest, ApiResponse } from "../types";
 class DocumentsController {
   async getDocuments(req: AuthRequest, res: Response): Promise<void> {
     try {
+      console.log("🚀 === DOCUMENTS CONTROLLER - getDocuments CALLED ===");
+      console.log("🚀 Request URL:", req.url);
+      console.log("🚀 Request method:", req.method);
+      console.log("🚀 Request headers:", req.headers);
+      console.log("Documents controller - getDocuments called");
+      console.log("Documents controller - User:", req.user);
+      console.log("Documents controller - Query params:", req.query);
+
       if (!req.user) {
+        console.log("Documents controller - No user found");
         res.status(401).json({
           success: false,
           error: "User not authenticated",
@@ -33,7 +42,14 @@ class DocumentsController {
         dateTo: dateTo as string,
       };
 
+      console.log("Documents controller - Options:", options);
+      console.log(
+        "Documents controller - Calling documentService.getDocuments..."
+      );
+
       const result = await documentService.getDocuments(req.user.id, options);
+
+      console.log("Documents controller - Result:", result);
 
       res.json({
         success: true,
@@ -409,11 +425,9 @@ class DocumentsController {
         return;
       }
 
-      const document = await documentService.updateDocument(
-        id,
-        req.user.id,
-        { title: title.trim() }
-      );
+      const document = await documentService.updateDocument(id, req.user.id, {
+        title: title.trim(),
+      });
 
       res.json({
         success: true,

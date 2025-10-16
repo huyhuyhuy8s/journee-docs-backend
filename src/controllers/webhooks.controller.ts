@@ -6,14 +6,14 @@ class WebhooksController {
   async handleLiveblocksWebhook(req: Request, res: Response): Promise<void> {
     try {
       const body = req.body;
-      const signature = req.headers['liveblocks-signature'] as string;
+      const signature = req.headers["liveblocks-signature"] as string;
 
       // Verify webhook signature (if configured)
       if (config.liveblocksWebhookSecret && signature) {
         const expectedSignature = crypto
-          .createHmac('sha256', config.liveblocksWebhookSecret)
+          .createHmac("sha256", config.liveblocksWebhookSecret)
           .update(body)
-          .digest('hex');
+          .digest("hex");
 
         if (signature !== expectedSignature) {
           res.status(401).json({
@@ -29,16 +29,20 @@ class WebhooksController {
       console.log("Received Liveblocks webhook:", event.type);
 
       switch (event.type) {
-        case 'roomCreated':
+        case "roomCreated":
           console.log("Room created:", event.data.roomId);
           break;
-        case 'roomDeleted':
+        case "roomDeleted":
           console.log("Room deleted:", event.data.roomId);
           break;
-        case 'userEntered':
-          console.log("User entered room:", event.data.userId, event.data.roomId);
+        case "userEntered":
+          console.log(
+            "User entered room:",
+            event.data.userId,
+            event.data.roomId
+          );
           break;
-        case 'userLeft':
+        case "userLeft":
           console.log("User left room:", event.data.userId, event.data.roomId);
           break;
         default:
@@ -61,7 +65,7 @@ class WebhooksController {
   async handleClerkWebhook(req: Request, res: Response): Promise<void> {
     try {
       const body = req.body;
-      const signature = req.headers['svix-signature'] as string;
+      const signature = req.headers["svix-signature"] as string;
 
       // Verify Clerk webhook signature (if configured)
       if (config.clerkWebhookSecret && signature) {
@@ -74,15 +78,15 @@ class WebhooksController {
       console.log("Received Clerk webhook:", event.type);
 
       switch (event.type) {
-        case 'user.created':
+        case "user.created":
           console.log("User created:", event.data.id);
           // Handle new user creation
           break;
-        case 'user.updated':
+        case "user.updated":
           console.log("User updated:", event.data.id);
           // Handle user profile updates
           break;
-        case 'user.deleted':
+        case "user.deleted":
           console.log("User deleted:", event.data.id);
           // Handle user deletion
           break;

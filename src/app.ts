@@ -21,6 +21,17 @@ app.use(corsMiddleware);
 app.use(express.json({ limit: "10mb" }));
 app.use(express.urlencoded({ extended: true, limit: "10mb" }));
 
+// Request logging middleware
+app.use((req, res, next) => {
+  console.log(`🌍 === INCOMING REQUEST ===`);
+  console.log(`🌍 ${req.method} ${req.url}`);
+  console.log(`🌍 Headers:`, JSON.stringify(req.headers, null, 2));
+  console.log(`🌍 Query:`, req.query);
+  console.log(`🌍 Body:`, req.body);
+  console.log(`🌍 ========================`);
+  next();
+});
+
 // Health check endpoint
 app.get("/health", (req, res) => {
   res.json({
@@ -43,15 +54,23 @@ app.use("*", (req, res) => {
 });
 
 // Global error handler
-app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
-  console.error("Global error handler:", err);
-  
-  res.status(err.status || 500).json({
-    success: false,
-    error: config.nodeEnv === "production" ? "Internal server error" : err.message,
-    ...(config.nodeEnv === "development" && { stack: err.stack }),
-  });
-});
+app.use(
+  (
+    err: any,
+    req: express.Request,
+    res: express.Response,
+    next: express.NextFunction
+  ) => {
+    console.error("Global error handler:", err);
+
+    res.status(err.status || 500).json({
+      success: false,
+      error:
+        config.nodeEnv === "production" ? "Internal server error" : err.message,
+      ...(config.nodeEnv === "development" && { stack: err.stack }),
+    });
+  }
+);
 
 const PORT = config.port;
 

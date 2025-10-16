@@ -16,10 +16,11 @@ class AuthController {
 
       const { status, body } = await liveblocksService.identifyUser(req.user);
 
-      res.status(status).json({
-        success: true,
-        data: body,
-      });
+      // Parse the body string to get the token
+      const responseData = JSON.parse(body);
+
+      // Return the response in the format Liveblocks expects
+      res.status(status).json(responseData);
     } catch (error) {
       console.error("Liveblocks auth error:", error);
       res.status(500).json({

@@ -38,7 +38,7 @@ class DocumentService {
         id: room.id,
         title,
         roomId: room.id,
-        createdBy: userId,
+        createdBy: userId, // Use Clerk ID for consistency
         collaborators: [],
         createdAt: this.parseDate(room.metadata.createdAt),
         updatedAt: new Date(),
@@ -55,8 +55,9 @@ class DocumentService {
     try {
       const room = await liveblocksService.getRoom(roomId);
 
-      // Check if user has access
+      // Check if user has access using Clerk ID (for consistency with existing system)
       const hasAccess = this.checkUserAccess(room, userId);
+
       if (!hasAccess) {
         throw new Error("Access denied");
       }
@@ -70,8 +71,39 @@ class DocumentService {
         createdBy: Array.isArray(room.metadata.createdBy)
           ? room.metadata.createdBy[0]
           : room.metadata.createdBy || "Unknown",
-        collaborators: Object.keys(room.usersAccesses || {}).filter(
-          (id) => id !== room.metadata.createdBy
+        collaborators: await Promise.all(
+          Object.entries(room.usersAccesses || {}).map(
+            async ([userId, permissions]) => {
+              try {
+                // Fetch user details for each collaborator
+                const user = await clerkService.getUser(userId);
+                return {
+                  id: userId,
+                  name: user.name,
+                  email: user.email,
+                  avatar: user.avatar || "",
+                  permission: (permissions as string[]).includes("room:write")
+                    ? ("room:write" as const)
+                    : ("room:read" as const),
+                };
+              } catch (error) {
+                // Fallback for users that can't be fetched
+                console.warn(
+                  `Could not fetch user details for ${userId}:`,
+                  error
+                );
+                return {
+                  id: userId,
+                  name: `User ${userId.slice(-4)}`,
+                  email: `${userId}@example.com`,
+                  avatar: "",
+                  permission: (permissions as string[]).includes("room:write")
+                    ? ("room:write" as const)
+                    : ("room:read" as const),
+                };
+              }
+            }
+          )
         ),
         createdAt: this.parseDate(room.metadata.createdAt),
         updatedAt: this.parseDate(
@@ -92,7 +124,7 @@ class DocumentService {
     try {
       const room = await liveblocksService.getRoom(roomId);
 
-      // Check if user has write access
+      // Check if user has write access using Clerk ID
       const hasWriteAccess = this.checkUserWriteAccess(room, userId);
       if (!hasWriteAccess) {
         throw new Error("Write access denied");
@@ -128,18 +160,25 @@ class DocumentService {
         updateData
       );
 
+      const createdByNormalized = Array.isArray(updatedRoom.metadata.createdBy)
+        ? updatedRoom.metadata.createdBy[0]
+        : updatedRoom.metadata.createdBy || "Unknown";
+
       return {
         id: updatedRoom.id,
         title: Array.isArray(updatedRoom.metadata.title)
           ? updatedRoom.metadata.title[0]
           : updatedRoom.metadata.title || "Untitled Document",
         roomId: updatedRoom.id,
-        createdBy: Array.isArray(updatedRoom.metadata.createdBy)
-          ? updatedRoom.metadata.createdBy[0]
-          : updatedRoom.metadata.createdBy || "Unknown",
-        collaborators: Object.keys(updatedRoom.usersAccesses || {}).filter(
-          (id) => id !== updatedRoom.metadata.createdBy
-        ),
+        createdBy: createdByNormalized,
+        collaborators: Object.entries(updatedRoom.usersAccesses || {})
+          .filter(([id]) => id !== createdByNormalized)
+          .map(([id, permissions]) => ({
+            id,
+            permission: (permissions as string[]).includes("room:write")
+              ? ("room:write" as const)
+              : ("room:read" as const),
+          })),
         createdAt: this.parseDate(updatedRoom.metadata.createdAt),
         updatedAt: this.parseDate(updatedRoom.metadata.updatedAt),
       };
@@ -175,39 +214,46 @@ class DocumentService {
     try {
       // Check if user has access to the document
       const room = await liveblocksService.getRoom(roomId);
+
       if (!this.checkUserWriteAccess(room, userId)) {
         throw new Error("Access denied");
       }
 
       // Find user by email
-      const user = await clerkService.getUserByEmail(email);
-      if (!user) {
+      const invitedUser = await clerkService.getUserByEmail(email);
+      if (!invitedUser) {
         throw new Error("User not found");
       }
 
-      // Add user to room
+      // Add user to room using Clerk ID for consistency
       await liveblocksService.addUserToRoom(
         roomId,
-        user.email,
-        permission === "room:read" ? ["room:read", "room:presence:write"] : ["room:write"]
+        invitedUser.id, // Use Clerk ID instead of email
+        permission === "room:read"
+          ? ["room:read", "room:presence:write"]
+          : ["room:write"]
       );
 
       // Trigger notification
-      const notificationId = `notif_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+      const notificationId = `notif_${Date.now()}_${Math.random()
+        .toString(36)
+        .substr(2, 9)}`;
       await liveblocksService.triggerInboxNotification({
-        userId: user.email,
-        kind: '$documentAccess',
+        userId: invitedUser.id, // Use Clerk ID for consistency
+        kind: "$documentAccess",
         subjectId: notificationId,
         activityData: {
           userType: permission === "room:write" ? "editor" : "viewer",
-          title: `You have been granted ${permission === "room:write" ? "editor" : "viewer"} access to the document`,
+          title: `You have been granted ${
+            permission === "room:write" ? "editor" : "viewer"
+          } access to the document`,
           updatedBy: userId,
         },
         roomId,
       });
 
       return {
-        user,
+        user: invitedUser,
         permission,
         invitedAt: new Date().toISOString(),
       };
@@ -225,7 +271,10 @@ class DocumentService {
     try {
       // Check if user has access to the document
       const room = await liveblocksService.getRoom(roomId);
-      if (!this.checkUserWriteAccess(room, userId) && room.metadata.createdBy !== userId) {
+      if (
+        !this.checkUserWriteAccess(room, userId) &&
+        room.metadata.createdBy !== userId
+      ) {
         throw new Error("Access denied");
       }
 
@@ -240,7 +289,7 @@ class DocumentService {
   async getDocumentAccess(roomId: string, userId: string): Promise<any> {
     try {
       const room = await liveblocksService.getRoom(roomId);
-      
+
       if (!this.checkUserAccess(room, userId)) {
         throw new Error("Access denied");
       }
@@ -264,8 +313,11 @@ class DocumentService {
   ): Promise<any> {
     try {
       const room = await liveblocksService.getRoom(roomId);
-      
-      if (!this.checkUserWriteAccess(room, userId) && room.metadata.createdBy !== userId) {
+
+      if (
+        !this.checkUserWriteAccess(room, userId) &&
+        room.metadata.createdBy !== userId
+      ) {
         throw new Error("Access denied");
       }
 
@@ -277,7 +329,10 @@ class DocumentService {
         },
       };
 
-      const updatedRoom = await liveblocksService.updateRoom(roomId, updateData);
+      const updatedRoom = await liveblocksService.updateRoom(
+        roomId,
+        updateData
+      );
 
       return {
         roomId: updatedRoom.id,
@@ -301,6 +356,10 @@ class DocumentService {
     totalPages: number;
   }> {
     try {
+      console.log("Document service - getDocuments called");
+      console.log("Document service - userId:", userId);
+      console.log("Document service - options:", options);
+
       const {
         page = 1,
         limit = 10,
@@ -311,7 +370,10 @@ class DocumentService {
         dateTo,
       } = options;
 
+      console.log("Document service - Calling liveblocksService.getRooms...");
       const rooms = await liveblocksService.getRooms(userId);
+      console.log("Document service - Rooms response:", rooms);
+
       let filteredRooms = rooms.data;
 
       // Filter by search
@@ -372,23 +434,34 @@ class DocumentService {
 
       const documents: Document[] = paginatedRooms.map((room) => ({
         id: room.id,
-        title: Array.isArray(room.metadata.title) 
-          ? room.metadata.title[0] 
+        title: Array.isArray(room.metadata.title)
+          ? room.metadata.title[0]
           : room.metadata.title || "Untitled Document",
         roomId: room.id,
         createdBy: Array.isArray(room.metadata.createdBy)
           ? room.metadata.createdBy[0]
           : room.metadata.createdBy || "Unknown",
-        collaborators: Object.keys(room.usersAccesses || {}).filter(
-          (id) => id !== (Array.isArray(room.metadata.createdBy) 
-            ? room.metadata.createdBy[0] 
-            : room.metadata.createdBy)
-        ),
+        collaborators: Object.entries(room.usersAccesses || {})
+          .filter(
+            ([id]) =>
+              id !==
+              (Array.isArray(room.metadata.createdBy)
+                ? room.metadata.createdBy[0]
+                : room.metadata.createdBy)
+          )
+          .map(([id, permissions]) => ({
+            id,
+            permission: (permissions as string[]).includes("room:write")
+              ? ("room:write" as const)
+              : ("room:read" as const),
+          })),
         createdAt: this.parseDate(room.metadata.createdAt),
         updatedAt: this.parseDate(
           room.lastConnectionAt || room.metadata.createdAt
         ),
       }));
+
+      console.log("Document service - Final documents:", documents);
 
       return {
         data: documents,

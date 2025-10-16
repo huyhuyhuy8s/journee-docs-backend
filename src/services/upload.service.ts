@@ -23,12 +23,17 @@ class UploadService {
   ): Promise<UploadResult> {
     try {
       // Convert buffer to base64 for Cloudinary upload
-      const base64Data = `data:${file.mimetype};base64,${file.buffer.toString('base64')}`;
-      
+      const base64Data = `data:${file.mimetype};base64,${file.buffer.toString(
+        "base64"
+      )}`;
+
       const result = await cloudinary.uploader.upload(base64Data, {
         folder,
         resource_type: "auto",
-        public_id: `${Date.now()}_${file.originalname.replace(/\.[^/.]+$/, "")}`,
+        public_id: `${Date.now()}_${file.originalname.replace(
+          /\.[^/.]+$/,
+          ""
+        )}`,
       });
 
       return {
