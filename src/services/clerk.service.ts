@@ -1,5 +1,11 @@
-import { clerkClient } from "@clerk/clerk-sdk-node";
+import { createClerkClient } from "@clerk/express";
 import { User } from "../types";
+import { config } from "../../config/environment";
+
+// Create Clerk client instance
+const clerkClient = createClerkClient({
+  secretKey: config.clerkSecretKey,
+});
 
 class ClerkService {
   async getUser(userId: string): Promise<User> {
@@ -21,9 +27,17 @@ class ClerkService {
 
   async getUserByEmail(email: string): Promise<User | null> {
     try {
-      const users = await clerkClient.users.getUserList({
+      const usersResponse = await clerkClient.users.getUserList({
         emailAddress: [email],
       });
+
+      const users: any[] = Array.isArray(usersResponse)
+        ? usersResponse
+        : usersResponse && "data" in usersResponse
+        ? (usersResponse as any).data
+        : "results" in (usersResponse as any)
+        ? (usersResponse as any).results
+        : [];
 
       if (users.length === 0) {
         return null;
@@ -45,7 +59,7 @@ class ClerkService {
 
   async verifyToken(token: string) {
     try {
-      const sessionToken = await clerkClient.verifyToken(token);
+      const sessionToken = await (clerkClient as any).verifyToken(token);
       return sessionToken;
     } catch (error) {
       console.error("Clerk verify token error:", error);
@@ -55,12 +69,22 @@ class ClerkService {
 
   async searchUsers(query: string, limit: number = 10): Promise<User[]> {
     try {
-      const users = await clerkClient.users.getUserList({
+      const usersResponse = await clerkClient.users.getUserList({
         query,
         limit,
       });
 
-      return users.map((clerkUser) => ({
+      // get the underlying array from the response whether it's returned directly
+      // or wrapped in a paginated object (e.g. { data: [...] } or { results: [...] })
+      const usersList: any[] = Array.isArray(usersResponse)
+        ? usersResponse
+        : usersResponse && "data" in usersResponse
+        ? (usersResponse as any).data
+        : "results" in (usersResponse as any)
+        ? (usersResponse as any).results
+        : [];
+
+      return usersList.map((clerkUser) => ({
         id: clerkUser.id,
         email: clerkUser.emailAddresses[0]?.emailAddress || "",
         name: `${clerkUser.firstName || ""} ${clerkUser.lastName || ""}`.trim(),

@@ -14,6 +14,8 @@ class AuthController {
         return;
       }
 
+      console.log("Liveblocks auth for user:", req.user.id);
+
       const { status, body } = await liveblocksService.identifyUser(req.user);
 
       res.status(status).json({

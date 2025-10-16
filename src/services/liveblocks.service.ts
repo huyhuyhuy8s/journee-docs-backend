@@ -2,21 +2,19 @@ import { Liveblocks } from "@liveblocks/node";
 import { config } from "../../config/environment";
 import { User } from "../types";
 
+const liveblocks = new Liveblocks({
+  secret: config.liveblocksSecretKey,
+});
+
 class LiveblocksService {
-  private liveblocks: Liveblocks;
-
-  constructor() {
-    this.liveblocks = new Liveblocks({
-      secret: config.liveblocksSecretKey,
-    });
-  }
-
-  async identifyUser(user: User, groupIds: string[] = []) {
+  async identifyUser(user: User) {
     try {
-      const { status, body } = await this.liveblocks.identifyUser(
+      console.log("Liveblocks identifying user:", user.id);
+
+      const { status, body } = await liveblocks.identifyUser(
         {
-          userId: user.email,
-          groupIds,
+          userId: user.id, // Use Clerk user ID consistently
+          groupIds: [], // Add groups if you have team/organization logic
         },
         {
           userInfo: {
@@ -29,109 +27,142 @@ class LiveblocksService {
         }
       );
 
+      console.log("Liveblocks auth successful for user:", user.id);
       return { status, body };
     } catch (error) {
       console.error("Liveblocks identify user error:", error);
-      throw new Error("Failed to identify user with Liveblocks");
+      throw error;
     }
   }
 
   async createRoom(roomId: string, userId: string, metadata: any = {}) {
     try {
-      const room = await this.liveblocks.createRoom(roomId, {
-        defaultAccesses: [],
+      console.log("Creating Liveblocks room:", roomId, "for user:", userId);
+
+      const room = await liveblocks.createRoom(roomId, {
+        defaultAccesses: [], // No default access
         usersAccesses: {
-          [userId]: ["room:write"],
+          [userId]: ["room:write"], // Give creator write access
         },
         metadata: {
+          title: metadata.title || "Untitled Document",
           createdBy: userId,
+          createdAt: new Date().toISOString(),
           ...metadata,
         },
       });
 
+      console.log("Room created successfully:", roomId);
       return room;
     } catch (error) {
-      console.error("Liveblocks create room error:", error);
-      throw new Error("Failed to create room");
+      console.error("Create room error:", error);
+      throw error;
     }
   }
 
-  async getRoom(roomId: string) {
+  async updateRoomAccess(
+    roomId: string,
+    userId: string,
+    access: ["room:write"] | ["room:read", "room:presence:write"] | null = [
+      "room:write",
+    ]
+  ) {
     try {
-      const room = await this.liveblocks.getRoom(roomId);
-      return room;
+      console.log(
+        "Updating room access:",
+        roomId,
+        "for user:",
+        userId,
+        "access:",
+        access
+      );
+
+      await liveblocks.updateRoom(roomId, {
+        usersAccesses: {
+          [userId]: access,
+        },
+      });
+
+      console.log("Room access updated successfully");
     } catch (error) {
-      console.error("Liveblocks get room error:", error);
-      throw new Error("Room not found");
+      console.error("Update room access error:", error);
+      throw error;
     }
   }
 
-  async updateRoom(roomId: string, updates: any) {
+  async addCollaborator(
+    roomId: string,
+    userId: string,
+    access: ["room:write"] | ["room:read", "room:presence:write"] | null = [
+      "room:write",
+    ]
+  ) {
     try {
-      const room = await this.liveblocks.updateRoom(roomId, updates);
-      return room;
+      // Get current room data
+      const room = await liveblocks.getRoom(roomId);
+
+      // Add new user access
+      const updatedAccess = {
+        ...room.usersAccesses,
+        [userId]: access,
+      };
+
+      await liveblocks.updateRoom(roomId, {
+        usersAccesses: updatedAccess,
+      });
+
+      console.log("Collaborator added to room:", roomId, "user:", userId);
     } catch (error) {
-      console.error("Liveblocks update room error:", error);
-      throw new Error("Failed to update room");
+      console.error("Add collaborator error:", error);
+      throw error;
+    }
+  }
+
+  async removeCollaborator(roomId: string, userId: string) {
+    try {
+      // Get current room data
+      const room = await liveblocks.getRoom(roomId);
+
+      // Remove user access
+      const updatedAccess = { ...room.usersAccesses };
+      delete updatedAccess[userId];
+
+      await liveblocks.updateRoom(roomId, {
+        usersAccesses: updatedAccess,
+      });
+
+      console.log("Collaborator removed from room:", roomId, "user:", userId);
+    } catch (error) {
+      console.error("Remove collaborator error:", error);
+      throw error;
     }
   }
 
   async deleteRoom(roomId: string) {
     try {
-      await this.liveblocks.deleteRoom(roomId);
-      return true;
+      await liveblocks.deleteRoom(roomId);
+      console.log("Room deleted:", roomId);
     } catch (error) {
-      console.error("Liveblocks delete room error:", error);
-      throw new Error("Failed to delete room");
+      console.error("Delete room error:", error);
+      throw error;
     }
   }
 
-  async addUserToRoom(
-    roomId: string,
-    userId: string,
-    permissions: ["room:write"] | ["room:read", "room:presence:write"] = [
-      "room:write",
-    ]
-  ) {
+  async updateRoomMetadata(roomId: string, metadata: any) {
     try {
-      await this.liveblocks.updateRoom(roomId, {
-        usersAccesses: {
-          [userId]: permissions as
-            | ["room:write"]
-            | ["room:read", "room:presence:write"],
+      console.log("📝 Updating Liveblocks room metadata:", roomId, metadata);
+
+      await liveblocks.updateRoom(roomId, {
+        metadata: {
+          ...metadata,
+          updatedAt: new Date().toISOString(),
         },
       });
-      return true;
-    } catch (error) {
-      console.error("Liveblocks add user to room error:", error);
-      throw new Error("Failed to add user to room");
-    }
-  }
 
-  async removeUserFromRoom(roomId: string, userId: string) {
-    try {
-      await this.liveblocks.updateRoom(roomId, {
-        usersAccesses: {
-          [userId]: null,
-        },
-      });
-      return true;
+      console.log("✅ Room metadata updated successfully");
     } catch (error) {
-      console.error("Liveblocks remove user from room error:", error);
-      throw new Error("Failed to remove user from room");
-    }
-  }
-
-  async getRooms(userId?: string) {
-    try {
-      const rooms = await this.liveblocks.getRooms({
-        userId,
-        limit: 100,
-      });
-      return rooms;
-    } catch (error) {
-      console.error("Liveblocks get rooms error:", error);
-      throw new Error("Failed to get rooms");
+      console.error("❌ Update room metadata error:", error);
+      throw error;
     }
   }
 }

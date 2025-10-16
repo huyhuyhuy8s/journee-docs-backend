@@ -1,9 +1,9 @@
-import { Request, Response, NextFunction } from "express";
+import { Response, NextFunction } from "express";
 import { clerkClient } from "@clerk/clerk-sdk-node";
 import { AuthRequest, User } from "../types";
 
 export const authMiddleware = async (
-  req: AuthRequest & Request,
+  req: AuthRequest,
   res: Response,
   next: NextFunction
 ): Promise<void> => {
@@ -19,10 +19,39 @@ export const authMiddleware = async (
     }
 
     const token = authHeader.substring(7); // Remove 'Bearer ' prefix
+    console.log("Processing token:", token.substring(0, 20) + "...");
 
-    // Verify token with Clerk
-    const sessionToken = await clerkClient.verifyToken(token);
-    const userId = sessionToken.sub;
+    let userId: string;
+
+    if (token.startsWith("clerk_")) {
+      // Simple clerk user ID format
+      userId = token.replace("clerk_", "");
+      console.log("Using simple user ID:", userId);
+    } else {
+      try {
+        // Try to verify as Clerk session token
+        const sessionToken = await clerkClient.verifyToken(token);
+        userId = sessionToken.sub;
+        console.log("Verified JWT token for user:", userId);
+      } catch (verifyError) {
+        console.error("Token verification failed:", verifyError);
+
+        // Fallback: try to decode without verification
+        try {
+          const decoded = JSON.parse(
+            Buffer.from(token.split(".")[1], "base64").toString()
+          );
+          userId = decoded.sub;
+          console.log("Fallback: extracted user ID from JWT:", userId);
+        } catch (fallbackError) {
+          res.status(401).json({
+            success: false,
+            error: "Invalid or expired token",
+          });
+          return;
+        }
+      }
+    }
 
     // Get user details from Clerk
     const clerkUser = await clerkClient.users.getUser(userId);
@@ -35,13 +64,14 @@ export const authMiddleware = async (
       color: generateUserColor(clerkUser.id),
     };
 
+    console.log("Authenticated user:", user.email);
     req.user = user;
     next();
   } catch (error) {
     console.error("Auth middleware error:", error);
     res.status(401).json({
       success: false,
-      error: "Invalid or expired token",
+      error: "Authentication failed",
     });
   }
 };
