@@ -7,6 +7,7 @@ import notificationsRoutes from "./notifications.routes";
 import activityRoutes from "./activity.routes";
 import adminRoutes from "./admin.routes";
 import webhooksRoutes from "./webhooks.routes";
+import faqRoutes from "./faq.routes";
 
 const router = Router();
 
@@ -19,5 +20,6 @@ router.use("/notifications", notificationsRoutes);
 router.use("/activity", activityRoutes);
 router.use("/admin", adminRoutes);
 router.use("/webhooks", webhooksRoutes);
+router.use("/faq", faqRoutes);
 
 export default router;
